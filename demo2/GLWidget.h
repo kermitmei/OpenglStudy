@@ -21,6 +21,9 @@ protected:
     //    void mouseMoveEvent(QMouseEvent *event);
 
 private:
+    static void display();
+    static void reshape(int w, int h);
+
 };
 
 #endif//_GLWIDGET_H_
