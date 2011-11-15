@@ -1,0 +1,421 @@
+NSAutorealeasePool
+3.0以后的版本推荐适用资源池排空。 
+developer.apple.com
+
+Object-C is a strict super set of C. Anything that you can write in C will be able to built and run in Objective-C.
+
+Object-C only supports single inheritance.
+
+Protocols define behavior that cross classes:
+协议基本上是多个功能的集合；
+委托(delegate)通常是一个对象需要去提问另一个对象的问题，其它对象就成为第一个对象的委托。其中会有一个定义好的委托协议，定义了在委托中可以调用什么功能。
+
+Dynamic runtime
+Objective-C引入了一个id的概念，它本质上是到一个匿名对象的引用，该对象的类型在编译时是不确定的。
+
+Syntax Additions
+* Small number of additions (ID)
+* Some new types
+  * Anonymous object
+  * Class (类本身也是对象，它描述的类型就是一个类)
+  * Selectors
+* Syntax for defining classed
+* Syntax for message expressions
+
+Dynamic Runtime
+* Object creation
+  * All objects allocated out of the heap
+  * No stack based objects
+* Message dispatch
+* Introspection
+
+
+Classes and Instances
+* In Objective-C, classes and instances are both objects
+  可以同时向类和实例变量发送消息
+* Class is the blueprint to create instances
+
+Classes and Objects
+* Classes declare state and behavior
+  state就是类中的变量
+  behavior定义了类的功能
+  实例变量通常是隐藏的
+* State (data) is maintained using instance variables
+* Behavior is implemented using methods
+* Instance variables typically hidden
+  * Accessible only using getter/setter methods
+
+Doc: how Objective-C is
+http://developer.apple.com/iphone/library/documentation/Cocoa/Conceptual/OOP_ObjC
+ 
+
+
+===Messaging syntax===
+
+* Instances respond to instance methods
+-(id)init;
+-(float)height;
+-(void)walk;
+
+* Classes respond to class methods
++(id)alloc;
++(id)person;
++(Person *)sharedPerson;
+
+发送消息给类的alloc, 会得到一个实例，发送给消息它的init。
+
+例如，receiver是一个实例，message是我们想要发送给receiver的消息。
+[receiver message]
+
+单参数：
+[receiver message:argument]
+
+多个参数：
+每个参数都需要被命名，"message:"和"andArg:"是你发送的这个功能的名字，他们包括了名字以及冒号,表示调用的是什么功能。上面的例子中，最终的功能实际上是"message:"和"Arg:"。
+
+这些顺序非常重要，是唯一能鉴别我们调用特定功能的语法，即名字以及参数的顺序。
+
+receiver 在左边，消息名字是message和arg, 两个本传递的参数在消息名字的冒号后。
+
+[receiver message:arg1 andArg:arg2]
+
+Message examples:
+
+Person *voter; //assume this exists
+
+[voter setAge:21];
+
+if([voter canLegallyVote]) {
+    //do something voter-y;
+}
+
+有两个参数，把voter注册到加州和独立党派：
+
+在Header里的定义如下：
+-(void)registerForState:(NSString *)state
+		  party:(NSString *)party;
+
+发送消息：
+[voter registerForState:@"CA" party:@"Independant"];
+
+
+==Terminology==
+[receiver method:argument]
+  * Message expression: [receiver method:argument]
+  * Message: 			  method:argument
+  * Selector:			  method:
+  * Method:  	 	The code selected by a message.
+
+Selector一般是方法(method)的名字，它是引用方法的途径之一。这一点类似于C中的函数指针和函数的关系，Selector的作用其实类似一个函数指针。因为Objective-C是非常动态的，它实际上并不引用方法的具体实现，而是引用带有相同名字的任何方法。
+
+方法(method)就是被消息选定的代码。
+
+
+==Dot Syntax==
+* Objective-C 2.0引入dot syntax
+* 便利的写法：
+  float height = [person height];
+  float height =  person.height;
+
+  [[person child] setHeight:newHeight];
+  person.child.height = newHeight;
+
+  如果多于一个参数怎么办？ —— You can NOT do that:) Dot语法是用来进行属
+  性取值和设置数值的。person.height = newheight会调用setHeight，并以
+  newHeight为新的参数。
+
+==Objective-C Types==
+
+* Dynamically-typed object
+  id anObject
+  * Just id
+  * Not id * (unless you really, really mean it...)
+    id是一个隐性指针(is implicitly a pointer)，它实际上并不需要*来表示它是一个指针。如果你使用了一个*，它实际上会变成一个指向指针的指针。
+
+
+* Statically-typed object
+  Person *anObject
+
+  如果发送信息的对象并没有实现相应的功能，会造成崩溃。
+
+* Objective-C提供了编译时刻类型检测，而不是运行时类型检测
+* Objective-C总是使用动态绑定
+
+
+nil: 控制对象指针，一个零类型的id。  nil实际上也是0，程序员可以根据自己的喜好适用0来代替之。
+* Sending a message to nil?
+  person = nil;
+  [person castBallot];
+
+  可以，没有什么问题，如果有返回值，返回值也会一直是0。
+  这在多层嵌套调用时很有用，你可以检测最后的返回值是否为0。如果返回值是一个struct，在发送0值时，那个结果的内容是未定义的。这里可能会产生很多Bug。比如，在处理含有一些Views或者其他物件的视图框(frames)时，你或许想在frames之间进行坐标转换，如一个rect到从一个view到另外一个view，如果不检查正在工作的实例的rect的转换结果是否是非nil值，那么当它成为一个nil并被你使用时，你取回的值并不能保证是"0,0,0,0"，而有可能是栈内的任何值——你会得到一些有趣的Bug:) 总之，对struct结果要小心处理，除此之外，发送0信息是完全安全的。
+
+==BOOL typedef==
+(YES,NO)|(TRUE,FALSE)|(1,0)
+
+
+===Selectors identify methods by name===
+* A selector has type SEL
+  SEL action = [button action];
+  [button setAction:@selector(start:)];
+
+  selector拥有自己的类型SEL，功能上和函数指针很类似。它经常使用在UIControls里。
+
+* Conceptually similar to function pointer
+
+
+* Selectors include the name and all colons, for example:
+  -(void)setName:(NSString *)name age:(int)age;
+  would have a selector:
+  SEL sel = @selector(setName:age:);
+
+  一个控件，会有目标(target)和行为(action)，在interface builder中会看到这些内容。在interface builder里可以很形象地设置这些。但是你要将发送的行为是明确说明为selector时，代码中常量的写法是： @selector。 (But the action that you are sending is specified as a selector and the way that you would specify that as a constant in code is you just write @selector, and then in parentheses the name of the selector.)
+
+   你也可以直接给栈内一个SEL变量分配一个selector对象。
+
+
+===Working with selectors===
+* You can determine if an object responds to a given selector
+  id obj;
+  SEL sel = @selector(start:);
+  if ([obj respondsToSelector:sel]) {
+     [obj performSelector:sel withObject:self]
+  }
+
+  COOL: 混合使用selector和Objective-C的动态本性。@selector会定义一个selector对象，括号里是selector的名字，表示它指向方法start。你也可以从特定的NSString调用一个selector。Selector是在编译时决定的: It is a compiler construct that lets the compiler know that you want a constant selector named start colon("start:").
+
+  *注意：适用selector发送消息时，应该现检查以下是否实现了对应的selector.
+
+* This sort of introspection and dynamic messaging underlies
+  many Cocoa design patterns
+
+  -(void)setTarget:(id)target;
+  -(void)setAction:(SEL)action;
+
+
+
+=== Working with Classes ===
+  Objective-C的方法中，有一个看不到的隐性参数，仅在运行时传递，即一个self指针。 在Objective-C中，参数的类型并不重要，但是名字很重要。
+
+==Class Introspection (类自省)==
+* 向类请求一个对象：
+  Class myClass = [myObject class];
+  NSLog(@"My class is %@", [myObject className]);
+
+* 检查一般的类关系(子类包含):
+  if([myObject isKindOfClass:[UIControl class]]) {
+      // something
+  }
+
+* 检查指定的类关系(子类扩展):
+  if ([myObject isMemberOfClass:[NSString class]]) {
+      // something string specific
+  }
+
+===Working with Objects===
+
+--Identity versus Equality--
+* Identity -- 测试指针值是否相同
+  if(object1 == object2) {
+    NSLog(@"Same exact object instance");
+  }
+
+* Equality -- 测试对象属性
+  if([object1 isEqual: object2] {
+     NSLog(@"Logically equivalent, but may
+             be different object instances");
+  }
+
+  注： isEqual是在NSObject中被定义的。
+  isEqual在对象集合化的时候特别重要，集合会将实例特例化(唯一性)，
+  如果只进行指针对比那结果未必是你想要的。
+
+--description
+* NSObject implements -description
+  - (NSString *)description;
+  默认的形式并不是太好，可以在子类中重新实现之，它通常被看作一个debug的工具，而不是一个面向用户的工具。
+
+* Objects represented in format strings using %@
+
+* When an object appears in a format string, it is asked for its
+  description
+    [NSString stringWithFormat:@"The answer is: %@", myObject];
+
+* You can log an object's description with:
+    NSLog([anObject description]);
+
+* Your custom subclasses can override description to return
+  more specific information
+
+===Foundation Framework===
+* Value and collection classes
+* User defaults
+* Archiving (数据对象自己知道如何归档和打开存档)
+* Notifications
+* Undo manager
+* Tasks, timers, threads
+* File system, pipes, I/O, bundles
+
+==NSObject==
+* Root class
+* Implements many basics
+  * Memory management
+  * Introspection
+  * Object equality
+
+==NSString==
+* General-purpose Unicode string support
+  * Unicode is a coding system which represents all of the world's
+    languages
+* Consistently used throughout Cocoa Touch instead of "char *"
+* Without doubt the most commonly used class
+* Easy to support any language in the world with Cocoa
+
+==String Constants==
+* In C constant strings are
+     "simple"
+* In ObjC, constant strings are
+    @"just as simple"
+* Constant strings are NSString instances
+    NSString *aString = @"Hello World!";
+
+  For a constant string, they can NEVER be deallocated.
+
+==Format Strings==
+* Similar to printf, but with %@ added for objects
+* Also used for logging
+
+
+==NSString==
+* Often ask an existing string for a new string with modifications:
+  -(NSTring *)stringByAppendingString:(NSString *)string;
+  -(NSTring *)stringByAppendingFormat:(NSString *)string;
+  -(NSTring *)stringByDeletingpathComponent;
+
+* Common NSString methods
+  - (BOOL)isEqualToString:(NSString *)string;
+  - (BOOL)hasPrefix:(NSString *)string;
+  - (int)intValue;
+  - (double)doubleValue;
+
+===NSMutableString===
+修改可变字符串，却不新建一个对象。
+* NSMutableString subclasses NSString
+* Allows a string to be modified
+* Common NSMutableString methods
+    +(id)string;
+    -(void)appendString:(NSString *)string;
+    -(void)appendFormat:(NSString *)format, ...;
+    
+    NSMutableString *newString = [NSMutableString string];
+    [newString appendString:@"Hi"];
+    [newString appendFormat:@", my favorite number is: %d",
+    	       [self favoriteNumber]];
+
+===Collections===
+* Array - ordered collection of objects
+* Dictionary - collection of key-value pairs
+* Set - unordered collection of unique objects
+* Common enumeration mechanism
+  用于罗列字典或者数组中的所有成员
+* Immutale and mutable versions
+  所有这些容器都有可变及非可变的版本
+  可变的容器类可以指定其大小，指定为0时，他们会无限地增长；如果
+  指定了一个固定值，当超出范围时就会报错。
+  * Immutable collections can be shared without side effect
+  * Prevents unexpected changes
+  * Mutable objects typically carry a performance overhead
+
+---NSArray---
+* Common NSArray methods
+  + arrayWithObjects:(id)firstObj, ...; //nil terminated!!!
+  只能传递一个id对象到其中，NSArrays之能包含其他已存在的对象。
+  不能把一个整数传入，需要证书数组时，应该使用NSNumber。你可以
+  把一个C整数封装为一个对象放入其中，但不能把C整数直接放进去。
+  
+  NSNumber是一个对象，能够表示int, float, double型C数据类型；
+  NSInteger是一个C类型的整数。
+
+* NSNotFound returned for index if not found
+  NSArray *array = [NSArray arrayWithObjects:@"Red", @"Blue",@"Green", nil];
+  if([array indexOfObject:@"Purple"] == NSNotFound) {
+      NSLog(@"No color purple");
+  }
+
+  NSNotFound(常量) is NOT nil.
+
+
+* Be careful of the nil termination!!!
+
+===NSMutableArray===
+* NSMutableArray subclassed NSArray
+* So, everything in NSArray
+* Common NSMutableArray Methods
+
+===NSDictionary===
+* Common NSDictionary methods
+* nil returned if no object found for given key
+
+===NSMutableDictionary===
+* NSMutableDictionary subclasses NSDictionary
+* Common NSMutableDictionary methods
+
+===NSSet===
+* Unordered collection of objects
+* Common NSSet methods
+
+===NSMutableSet===
+* NSMutaableSet subclasses NSSet
+* Common NSMutableSet methods
+
+===Enumeration===
+* Consistent way of enumerating over objects in collections
+* Use with NSArray, NSDictionary, NSSet, etc.
+
+  NSArray *array = ...; //assume an array of People objects
+
+  //old school
+  Person *person;
+  int count = [array count];
+  for(i = 0; i < count; i++) {
+    person = [array objectAtIndex:i];
+    NSLog([person description]);
+  }
+  注：如果你在你的循环中改变数据，那么上面old school这种方法更
+      安全。
+
+-----------------------------------------
+  //new school
+  for(Person *person in array) {
+     NSLog([person description]);
+  }
+
+===NSNumber===
+* In Objective-C, you typically use standard C number types
+* NSNumber is used to wrap C number types as objects
+* Subclass of NSValue
+* No mutable equivalent!
+* Common NSNumber methods
+  +(NSNumber *)numberWithInt:(int)value;
+  +(NSNumber *)numberWithDouble:(double)value;
+  -(int)intValue;
+  -(double)doubleValue;
+
+===Other Classes===
+* NSData / NSMutableData
+  * Arbitrary sets of bytes
+* NSDate / NSCalendarDate
+  * Times and dates
+
+
+===Getting some objects===
+* Until we talk about memory maanagement:
+  * Use class factory methods
+    * NSString's +stringWithFormat:
+    * NSArray's  +array
+    * NSDictionary's +dictionary
+  * Or any method that returns an object except alloc/init or copy.
+
+  这些东西会返回autoreleased对象，会丢进资源池，你不需要担心内存管理。
+
+  下节：  你可能想避免alloc init，还有返回的对象会被引用技术的复制功能 。

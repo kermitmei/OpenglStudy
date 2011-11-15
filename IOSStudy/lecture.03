@@ -1,0 +1,341 @@
+===Topics===
+* Creating Custom Classes
+* Object Lifecycle
+* Autorelease
+* Objective-C Properties
+
+===Design Phase===
+
+* Create a class
+
+* Determine the superclass
+
+* What properties should it have?
+
+
+===Defining a class===
+
+* (.h):   A public header file
+* (.cpp): A private implementation
+
+//import会自动探测header不会被重复include
+#import <Foundation/Foundation.h>
+
+@interface ClassName : NSObject
+{
+    // instance variables
+    NSString *name;
+    int age;
+}
+
+// method declarations
+-(NSString *)name;
+-(void)setName:(NSString *)value;
+
+-(int)age;
+-(void)setAge:(int)age;
+
+-(BOOL)canLegallyVote;
+-(void)castBallot;
+
+@end
+
+
+===Implementing custom class===
+* Implement setter/getter methods
+* Implement action methods
+
+
+===Class Implementation===
+#import "Person.h"
+
+@implementation Person
+
+-(int)age {
+    return age;
+}
+
+-(void)setAge:(int)value {
+    age = value;
+}
+
+//... and other methods
+
+@end
+
+===Superclass methods===
+* As we just saw, objects have an implecit variable named "self"
+* Can also invoke superclass methods using "super"
+
+  -(void)doSomething {
+  //Call superclass implementation first
+  [super doSomething];
+  //Then do our custom behavior
+  int foo = bar;
+  // ...
+  }
+
+
+===Object Lifecycle===
+* Creating objects = Allocate + Initialize
+  * Two step process
+  * allocate memory to store the object
+    + alloc: Class method that knows how much memory is needed
+
+  * initialize object state
+    - init: Instance method to set initial values, perform other setup    
+  [Eg]
+    Person *person = nil;
+    person = [[Person alloc] init];
+
+    * Implementing your own -init method
+          -(id) init {
+    	      // allow superclass to iitialize its state first
+              if(self = [super init]) {
+	      	  age  = 0;
+		  name = @"Bob";
+		  ... //Do other initialization ...
+	      }
+	      return self;
+	  }
+       注：自己实现的init方法通常要返回一个self对象id；此外需要确保
+           self不是nil，当发生内存不足等问题时self可能会是0。
+    * Multiple init methods
+      * Classes may define multiple init methods
+      	-(id)init;
+      	-(id)initWithName:(NSString *)name;
+      	-(id)initWithName:(NSString *)name age:(int)age;
+      注：The simple ones always call into the complex ones.
+        -(id)init {
+	    return [self initWithName:"No Name"];
+        }
+
+      	-(id)initWithName:(NSString *)name {
+	    return [self initWithName:name age:0];
+	}
+      当子类要撤销父类的所有行为时，他会重载父类的init方法。
+
+    * Finishing Up With an Object
+          Person *person = nil;
+          person = [[Person alloc] init];
+        
+          [person setName:@"Jimmy Jones"];
+          [person setAge:32]
+        
+          [person castBallot];
+          [person doSomethingElse];
+
+* Memory management
++---------------------------------------+
+|             | Allcation | Destruction |
+|---------------------------------------|
+|      C      |  malloc   |    free     |
+|---------------------------------------|
+| Objective-C |  alloc    |   dealloc   |
++---------------------------------------+
+
+   * Calls must be balanced
+   * However, you'll never call -dealloc dirctly
+   * Every object has a retain count
+     * Defined on NSObject
+     * As long as retain count is > 0, object is alive and valid
+   * +alloc and -copy create objects with retain count == 1
+   * -retain increments retain count
+   * -release decrements retain count
+   * When retain count reaches 0, object is destroyed
+     * -dealloc method invoked automatically
+     * One-way street, once you're in -dealloc there's no turing back
+   Q: 如果有两个对象，相互指向对方怎么样？ retain count不会变为0，除非
+      一个对象主动释放另一个，否则会内存泄漏。
+   Q：向一个已经dellocated的对象发送消息会导致什么？
+      会崩溃！有个惯例，如果release一个变量以后，要将变量设为nil值。
+      向nil值发送消息不会发生任何错误。如：
+      [person release];
+      person = nil;
+      [person doSomething]; //No effect
+
+* Destroying objects
+  * Implementing a -dealloc method
+    -(void)dealloc {
+        // Do any cleanup that's necessary
+	...
+
+	// When things're done, call super to clean us up
+	[super dealloc];
+    }
+
+* Object Lifecycle Recap
+  * Objects begin with a retain count of 1
+  * Increase and decrease with -retain and -release
+  * When retain count reaches 0, object deallocated automatically
+  * You NEVER call dealloc explicitly in your code
+    * Exception is calling -[super dealloc]
+    * you only deal with alloc, copy, retain, release
+
+===Object Ownership===
+
+保持对象：
+-(void)setName:(NSString *)newName {
+    if(name != newName) {
+        [name release];
+	name = [newName retain];
+	// name's retain count has been bumped up by 1
+    }
+}
+
+复制对象：
+-(void)setName:(NSString *)newName {
+    if(name != newName) {
+        [name release];
+	name = [newName copy];
+	// name has retain count of 1, we own it
+    }
+}
+
+Releasing Instance Variables
+
+-(void)dealloc {
+    // Do any cleanup that's necessary
+    [name release];
+
+    // When we're done, call super to clean us up
+    [super dealloc];
+}
+
+  * 关于对象内存管理有一个惯例： 如果某人将一个对象传入方法内部，这个
+    方法需要进行自己的retain&release对，保持"净值"为零。
+  * 尝试在密集范围内匹配你的(alloc|retain)&release对。 
+
+===Autorelease===
+* Returning a newly created object
+
+  -(NSString *)fullName {
+    NSString *result;
+    result = [[NSString alloc] initWithFormat:@"%@ %@",
+    	     		       firstName, lastName];
+    [result autorelease]; 
+    return result;
+  }
+
+  Just right: result is released, but not right away.
+              Caller gets valid object and could retain if needed.
+
+* Autoreleasing Objects
+  * Calling -autorelease flags an object to be sent release at some
+    point in the future.
+  * Let's you fulfill your retain/release obligations while allowing an
+    object some additional time to live
+  * Makes it much more convenient to manage memory
+  * Very useful in methods which return a newly created object
+
+* Method Names & Autorelease
+  * Methods whose names includes alloc, copy, or new return
+    a retained object that the caller needs to release
+    鼓励这种用法：
+    NSMutableString *string = [[NSMutableString alloc] init];
+    //We are responsible for calling -release or -autorelease
+    [string autorelease];
+
+  * All other methods return autoreleased objects
+    NSMutableString *string = [NSMutableString string];
+    // The method name doesn't indicate that we need to release it
+    // So don't- we're cool!
+
+  * This is a convention -follow it in methods you define!
+
+  惯例：方法名中不包含alloc, copy或者new的，都应是为autorelease对象。
+
+* How does -autorelease work?
+    [[NSAutorelease alloc] init]
+  * Object is added to current autorelease pool
+    * When the pool itself is released, it sends -release to all its objects
+
+  * UIKit automatically wraps a pool around every event dispatch
+
+  * Autorelease会在每个事件循环结束时被排干
+
+  * Hanging Onto an Autoreleased Object: retain before release happens
+   
+    name = [NSMutableString string];
+
+    //We want to name to remain valid!
+    [name retain];
+
+    // Eventually, we'll release it (maybe in our -dealloc?)
+    [name release];
+
+* Side Note: Garbage Collection
+  * Autorelease is not garbage collection
+  * Objective-C on iPhone OS does not have garbage collection
+
+===Objective-C Properties===
+* Properties
+  * Provide access to object attributes
+  * Shortcut to implementing getter/setter methods
+  * Also allow you to specify:
+    * read-only versus read-write access
+      @property int age; //read-write by default;
+      @property (readonly) BOOL canLegallyVote;
+      只读表示它只生成getter，而不生成setter。
+    
+    * Memory management policy(only for object properties)
+      @property (assign) NSString *name; //pointer assignment
+      @property (retain) NSString *name; //retain  called
+      @property (copy)   NSString *name; //copy    called
+
+    * Mix and match synthesized and implemented properties
+      @synthesize age;
+      @synthesize name;
+
+      -(void)setAge:(int)value {
+          age = value;
+	  // now do something with the new age value...
+      }
+
+      Q: 理解synthesize是什么意思? 
+
+* Properties In Practice
+  * Newer APIs use @property
+  * Older APIs use getter/setter methods
+  * Properties used heavily throughout UIKit APIs
+    * Not so much with Foundation APIs
+  * You can use either approach
+    * Properties mean writing less code, but "magic" can sometimes
+      be non-obvious
+
+* Dot Syntax and self
+  * When used in custom methods, be careful with dot syntax for
+    properties defined in your class
+
+  * References to properties and ivars(Instance variable) behave 
+    very differently
+
+  @interface Person : NSObject
+  {
+      NSString *name;
+  }
+  @property (copy) NSString *name;
+  @end
+
+  @implementation Person
+  -(void)doSomething {
+      name      = @"Fred";    // accesses ivar directly!
+      self.name = @"Fred";    // calls accessor method
+  }
+
+* Common Pitfall with Dot Syntax
+
+  @implementation Person
+  -(void)setAge:(int)newAge {
+      self.age = newAge;      //陷入无限循环
+  }
+  @end
+
+Further Reading
+* Obective-C 2.0 Programming Language
+  * "Defining a Class"
+  * "Declared Properties"
+
+* Memory Management Programming Guide for Cocoa
+
+  ##Mac OS版本中会提到垃圾回收，但IOS上没有。

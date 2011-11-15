@@ -4,7 +4,7 @@
 
 void init(void)
 {
-    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearColor(0.1, 0.5, 0.3, 0.8);
     glShadeModel(GL_FLAT);
 }
 
