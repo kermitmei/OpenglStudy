@@ -206,3 +206,20 @@ Exit app
   is supported
 
 * Different events can be setup in IB
+
+
+===Manual Target-Action===
+* Same informatio IB would use
+
+* API and UIControlEvents found in UIControl.h
+
+* UIControlEvents is a bitmask
+
+  @interface UIControl
+  -(void)addTarget:(id)target action:(SEL)action
+         forControlEvents:(UIControlEvents)controlEvents;
+  -(void)removeTarget:(id)target action:(SEL)action
+         forControlEvents:(UIControlEvents)controlEvents;
+
+  @end
+

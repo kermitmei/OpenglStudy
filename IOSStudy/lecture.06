@@ -1,0 +1,134 @@
+===Why Model-View-Controller===
+* Ever used the word "spaghetti" to describe code?
+* Clear responsibilities make things easier to maintain
+* Avoid having one monster class that does everything
+
+* Think of ways to write less code
+
+===Communication and MVC===
+* How should objects communicate?
+* Which objects know about one another?
+
+  ---Model---
+  * Not aware of view or controllers
+  * Typically the most reusable
+  * Communicate generically using...
+    * Key-value observing
+      一个对象能监听听另一个对象的变化
+    * Notifications
+
+  ---View---
+  * Not aware of controllers, may be 
+    aware of relevent model objects
+  * Also tends to be reusable
+  * Communicate with controller using ...
+    * Target-action
+    * Delegation
+
+  ---Controller---
+  * Kenows about model and view objects
+  * The brains of the operation
+  * Manages relationships and data flow
+  * Typically app-specific, so rarely reusable
+
+===View Controller===
+
+===Problem: Managing a Screenful===
+* Controller manages views, data and application logic
+* Apps are made up of many of these
+* Would be nice to have a well-deined starting point
+  * A la UIView for views
+  * Common language for talking about controllers
+
+===When to call -loadView?===
+* Don't do it!
+* Cocoa tends to embrace a layz philosophy
+  * Call -realease instead of -dealloc
+  * Call -setNeedsDisplay instead of -drawRect
+* Allows work to be deferred or coalesced
+  * Performance
+
+
+===Creating Your View in Code===
+* Override -loadView
+  * Never call this directly
+* Create your views
+* Set the view property
+* Create view controller with -init
+
+  // Subclass of UIViewController
+  -(void)loadView
+  {
+    MyView *myView = [[MyView Alloc] initWithFrame:frame];
+    self.view = myView;
+    [myView release];
+  }
+  
+  应用想要调用这个视图控制器时，总会调用viewController.view
+
+===Creating your View with IB(Interface Builder)===
+* Lay out a view in IB
+* File's owner is view controller class
+  当你在一个ViewController中加载一个nib时，它会成为File's Owner，
+  然后，连接nib View和Controller的IBOutlet。
+
+* Hook up view outlet
+* Create view controller with -initWithNibName:bundle
+
+===View Controller Lifecycle===
+-(id)initWithNibName:(NSString *)nibName
+bundle:(NSBundle *)bundle
+{
+  if(self == [super init...]) {
+    // Perform initial setup, nothing view-related
+    myData = [[NSMutableArray alloc] init];
+    self.title = @"Foo";
+  }
+  return self;
+}
+
+-(void)viewDidLoad
+{
+  // Your view has been loaded
+  // Customize it here if needed
+  view.someWeirdProperty = YES;
+}
+
+
+在视图切换时，有四个功能是我们要知道的：
+
+1.viewWillAppear：在视图来即将被显示前调用
+
+-(void)viewWillAppear:(BOOL)animated
+{
+  [super viewWillAppear:animated];
+
+  // Your view is about to show on the screen
+  [self beginLoadingDataFromTheWeb];
+  [self startShowingLoadingProgress];
+}
+
+2.viewDidAppear
+
+3.viewWillDisappear:在视图即将离开屏幕之前调用
+
+-(void)viewWillDisappear:(BOOL)animated
+{
+  [super viewWillDisappear:animated];
+
+  // Your view is about to leave the screen
+  [self rememberScrollPosition];
+  [self saveDataToDisk];
+}
+
+4.viewDidDisappear
+
+===Loading & Saving Data===
+* Lots of options out there, depends on what you need
+  * NSUserDefaults
+  * Property lists
+  * CoreData
+  * SQlite
+  * Web services
+
+* Covering in greater depth in Lecture 9 
