@@ -173,7 +173,6 @@ nil: 控制对象指针，一个零类型的id。  nil实际上也是0，程序�
 
    你也可以直接给栈内一个SEL变量分配一个selector对象。
 
-
 ===Working with selectors===
 * You can determine if an object responds to a given selector
   id obj;
