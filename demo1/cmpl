@@ -1,1 +1,0 @@
-g++ -o main_glut main_glut.cpp -I /usr/include/GL/ -lglut

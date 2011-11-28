@@ -13,6 +13,7 @@
 #include <stdio.h>      // Header file for standard file i/o.
 #include <stdlib.h>     // Header file for malloc/free.
 #include <string.h>
+#include <math.h>
 
 /* ascii codes for various special keys */
 #define ESCAPE 27
@@ -151,6 +152,42 @@ int ImageLoad(char *filename, Image *image) {
     return 1;
 }
 
+#define GL_PI 3.1416f
+
+void setupRC(void)
+{
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glColor3f(0.0f, 1.0f, 0.0f);
+}
+
+void RenderScene(void)
+{
+    GLfloat x,y,z,angle;
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    //    GLfloat xRot = 0.0f;
+    //    GLfloat yRot = 0.0f;
+
+    glPushMatrix();
+    glRotatef(xrot, 1.0f, 0.0f, 0.0f);
+    glRotatef(yrot, 0.0f, 1.0f, 0.0f);
+
+    glBegin(GL_POINTS);
+
+    z = -50.f;
+    for(angle = 0.0f; angle <= (2.0f*GL_PI)*3.0f; angle += 0.1) {
+	x = 50.0f * sin(angle);
+	y = 50.0f * cos(angle);
+
+	glVertex3f(x, y, z);
+	z += 0.5f;
+    }
+    
+    glEnd();
+    glPopMatrix();
+    glutSwapBuffers();
+}
+
 // Load Bitmaps And Convert To Textures
 GLvoid LoadGLTextures(GLvoid) {	
     // Load Texture
@@ -199,7 +236,9 @@ GLvoid LoadGLTextures(GLvoid) {
 };
 
 /* A general OpenGL initialization function.  Sets all of the initial parameters. */
-GLvoid InitGL(GLsizei Width, GLsizei Height)	// We call this right after our OpenGL window is created.
+
+// We call this right after our OpenGL window is created.
+GLvoid InitGL(GLsizei Width, GLsizei Height)
 {
     LoadGLTextures();                           // load the textures.
     glEnable(GL_TEXTURE_2D);                    // Enable texture mapping.
@@ -213,7 +252,8 @@ GLvoid InitGL(GLsizei Width, GLsizei Height)	// We call this right after our Ope
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();				// Reset The Projection Matrix
     
-    gluPerspective(45.0f,(GLfloat)Width/(GLfloat)Height,0.1f,100.0f);	// Calculate The Aspect Ratio Of The Window
+    // Calculate The Aspect Ratio Of The Window
+    gluPerspective(45.0f,(GLfloat)Width/(GLfloat)Height,0.1f,100.0f);
     
     glMatrixMode(GL_MODELVIEW);
 
@@ -227,10 +267,12 @@ GLvoid InitGL(GLsizei Width, GLsizei Height)	// We call this right after our Ope
 /* The function called when our window is resized (which shouldn't happen, because we're fullscreen) */
 GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 {
-    if (Height==0)				// Prevent A Divide By Zero If The Window Is Too Small
+    // Prevent A Divide By Zero If The Window Is Too Small
+    if (Height==0)				
 	Height=1;
 
-    glViewport(0, 0, Width, Height);		// Reset The Current Viewport And Perspective Transformation
+    // Reset The Current Viewport And Perspective Transformation
+    glViewport(0, 0, Width, Height);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -242,24 +284,36 @@ GLvoid ReSizeGLScene(GLsizei Width, GLsizei Height)
 /* The main drawing function. */
 GLvoid DrawGLScene(GLvoid)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		// Clear The Screen And The Depth Buffer
+    // Clear The Screen And The Depth Buffer
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);		
     glLoadIdentity();				// Reset The View
 
     glTranslatef(0.0f,0.0f,z);                  // move z units out from the screen.
-    
-    glRotatef(xrot,1.0f,0.0f,0.0f);		// Rotate On The X Axis
-    glRotatef(yrot,0.0f,1.0f,0.0f);		// Rotate On The Y Axis
+    glRotatef(xrot, 1.0f, 0.0f, 0.0f);		// Rotate On The X Axis
+    glRotatef(yrot, 0.0f, 1.0f, 0.0f);		// Rotate On The Y Axis
 
-    glBindTexture(GL_TEXTURE_2D, texture[filter]);   // choose the texture to use.
+    // choose the texture to use.
+    glBindTexture(GL_TEXTURE_2D, texture[filter]);
 
-    glBegin(GL_QUADS);		                // begin drawing a cube
+    // begin drawing a cube
+    glBegin(GL_QUADS);
     
     // Front Face (note that the texture's corners have to match the quad's corners)
-    glNormal3f( 0.0f, 0.0f, 1.0f);                              // front face points out of the screen on z.
-    glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);	// Bottom Left Of The Texture and Quad
-    glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);	// Bottom Right Of The Texture and Quad
-    glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);	// Top Right Of The Texture and Quad
-    glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);	// Top Left Of The Texture and Quad
+
+    // front face points out of the screen on z.
+    glNormal3f( 0.0f, 0.0f, 1.0f);
+
+    // Bottom Left Of The Texture and Quad
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(-1.0f, -1.0f,  1.0f);
+
+    // Bottom Right Of The Texture and Quad
+    glTexCoord2f(1.0f, 0.0f); glVertex3f( 1.0f, -1.0f,  1.0f);
+
+    // Top Right Of The Texture and Quad
+    glTexCoord2f(1.0f, 1.0f); glVertex3f( 1.0f,  1.0f,  1.0f);
+
+    // Top Left Of The Texture and Quad
+    glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.0f,  1.0f,  1.0f);
     
     // Back Face
     glNormal3f( 0.0f, 0.0f,-1.0f);                              // back face points into the screen on z.
@@ -312,7 +366,7 @@ void keyPressed(unsigned char key, int x, int y)
     /* avoid thrashing this procedure */
     usleep(100);
 
-    switch (key) {    
+    switch (key) {
     case ESCAPE: // kill everything.
 	/* shut down our window */
 	glutDestroyWindow(window); 
@@ -405,15 +459,20 @@ int main(int argc, char **argv)
 
     /* Open a window */  
     window = glutCreateWindow("Jeff Molofee's GL Code Tutorial ... NeHe '99");  
-
     /* Register the function to do all our OpenGL drawing. */
+
     glutDisplayFunc(&DrawGLScene);  
+    setupRC();
+    RenderScene();
+
+    //glutDisplayFunc(&RenderScene);  
 
     /* Go fullscreen.  This is as soon as possible. */
-    glutFullScreen();
+    //glutFullScreen();
 
     /* Even if there are no events, redraw our gl scene. */
-    glutIdleFunc(&DrawGLScene);
+    //glutIdleFunc(&DrawGLScene);
+    glutIdleFunc(&RenderScene);
 
     /* Register the function called when our window is resized. */
     glutReshapeFunc(&ReSizeGLScene);
